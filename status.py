@@ -59,8 +59,16 @@ threshold = 1
 
 logins = 1
 
-with open("login.json") as f:
-    login = json.load(f)
+try:
+    with open("login.json") as f:
+        login = json.load(f)
+except Exception:
+    login = {
+        "usr": input("user: "),
+        "pwd": input("password: ")
+    }
+    with open("login.json", "w") as f:
+        json.dump(login, f)
 
 api = growattServer.GrowattApi(False, "MIC55555")
 login_response = api.login(login["usr"], login["pwd"])
@@ -71,6 +79,9 @@ while True:
     except Exception:
         logins += 1
         login_response = api.login(login["usr"], login["pwd"])
+        if not login_response["success"]:
+            print(login_response["error"])
+            exit(1)
         plants = api.plant_list(login_response['user']['id'])
 
     plant_id = plants['data'][0]["plantId"]
