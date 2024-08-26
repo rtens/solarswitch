@@ -4,6 +4,7 @@ import growattServer
 import os
 import datetime
 import json
+import signal
 
 try:
     import RPi.GPIO as gpio
@@ -26,6 +27,8 @@ except Exception:
 
     def led_cleanup():
         pass
+
+running = False
 
 def led_flash(on, off):
     while running:
@@ -54,6 +57,16 @@ def log(message):
         stamp = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
         log.write(stamp + " " + message + "\n")
 
+def shutdown(*args):
+    print("...")
+    global running
+    running = False
+    if thread: thread.join()
+    led_cleanup()
+    print(bcolors.show + bcolors.end + "bye")
+    exit()
+
+signal.signal(signal.SIGINT, shutdown)
 
 def multibar(parts, max=6.5):
     length = 65
@@ -97,7 +110,7 @@ while True:
         if not login_response["success"]:
             log("login error: " + json.dumps(login_response))
             print(login_response["error"])
-            exit(1)
+            shutdown()
         plants = api.plant_list(login_response['user']['id'])
 
     plant_id = plants['data'][0]["plantId"]
@@ -181,11 +194,7 @@ while True:
     try:
         time.sleep(3*60)
     except KeyboardInterrupt:
-        print()
-        print(bcolors.show + bcolors.end + "bye")
-        running = False
-        led_cleanup()
-        exit()
+        shutdown()
 
     running = False
     thread.join()
