@@ -49,10 +49,18 @@ class bcolors:
     end = '\033[0m'
 
 
+def log(message):
+    with open("log.txt", "a") as log:
+        stamp = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
+        log.write(stamp + " " + message + "\n")
+
+
 def multibar(parts, max=6.5):
     length = 65
     bars = "".join([sym * int(float(val) * length/max) for (sym, val) in parts])
     return "|" + bars + (" " * (length-len(bars))) + "|"
+
+log("started")
 
 try:
     with open("history.json") as f:
@@ -84,8 +92,10 @@ while True:
         plants = api.plant_list(login_response['user']['id'])
     except Exception:
         logins += 1
+        log("login again: " + json.dumps(login_response))
         login_response = api.login(login["usr"], login["pwd"])
         if not login_response["success"]:
+            log("login error: " + json.dumps(login_response))
             print(login_response["error"])
             exit(1)
         plants = api.plant_list(login_response['user']['id'])
@@ -111,9 +121,7 @@ while True:
 
         if switch == False or switch == None:
             switch = True
-            with open("log.txt", "a") as log:
-                stamp = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
-                log.write(stamp + " switched on\n")
+            log("switched on")
 
         if soc >= 95:
             thread = threading.Thread(target=led_set, args=(True,))
@@ -122,9 +130,7 @@ while True:
     else:
         if switch == True or switch == None:
             switch = False
-            with open("log.txt", "a") as log:
-                stamp = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
-                log.write(stamp + " switched off\n")
+            log("switched off")
 
         if average_net >= 0:
             status = bcolors.blue
