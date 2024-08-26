@@ -57,6 +57,7 @@ def multibar(parts, max=6.5):
 history = []
 threshold = 1
 
+switch = None
 logins = 1
 
 try:
@@ -100,21 +101,34 @@ while True:
         threshold = 0
         status = bcolors.green
 
+        if switch == False or switch == None:
+            switch = True
+            with open("log.txt", "a") as log:
+                stamp = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
+                log.write(stamp + " switched on\n")
+
         if soc >= 95:
             thread = threading.Thread(target=led_set, args=(True,))
         else:
             thread = threading.Thread(target=led_flash, args=(2, .1))
-    elif average_net >= 0:
-        status = bcolors.blue
-        thread = threading.Thread(target=led_flash, args=(1, .5))
-    elif soc >= 15:
-        threshold = .5
-        status = bcolors.yellow
-        thread = threading.Thread(target=led_flash, args=(1, 2))
     else:
-        threshold = 1
-        status = bcolors.red
-        thread = threading.Thread(target=led_flash, args=(.1, 5))
+        if switch == True or switch == None:
+            switch = False
+            with open("log.txt", "a") as log:
+                stamp = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
+                log.write(stamp + " switched off\n")
+
+        if average_net >= 0:
+            status = bcolors.blue
+            thread = threading.Thread(target=led_flash, args=(1, .5))
+        elif soc >= 15:
+            threshold = .5
+            status = bcolors.yellow
+            thread = threading.Thread(target=led_flash, args=(1, 2))
+        else:
+            threshold = 1
+            status = bcolors.red
+            thread = threading.Thread(target=led_flash, args=(.1, 5))
 
     print(bcolors.hide, end="")
     print(status, end="")
@@ -129,6 +143,7 @@ while True:
     print("Exporting:  ", mix_status["pactogrid"], "kW")
     print("History:    ", average_net, history)
     print("Threshold:  ", threshold)
+    print("Switch:     ", switch)
 
     print()
     print(multibar((("=", soc-10),), 90))
