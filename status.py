@@ -54,7 +54,12 @@ def multibar(parts, max=6.5):
     bars = "".join([sym * int(float(val) * length/max) for (sym, val) in parts])
     return "|" + bars + (" " * (length-len(bars))) + "|"
 
-history = []
+try:
+    with open("history.json") as f:
+        history = json.load(f)
+except Exception:
+    history = []
+
 threshold = 1
 
 switch = None
@@ -92,6 +97,9 @@ while True:
 
     history.append(round(float(mix_status["ppv"]) - float(mix_status["pLocalLoad"]), 2))
     if len(history) > 7: history.pop(0)
+
+    with open("history.json", "w") as f:
+        json.dump(history, f)
 
     average_net = round(sum(history) / len(history), 2)
 
