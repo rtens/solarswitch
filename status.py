@@ -53,6 +53,8 @@ class bcolors:
 
 
 def log(message):
+    print()
+    print(message)
     with open("log.txt", "a") as log:
         stamp = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
         log.write(stamp + " " + message + "\n")
@@ -83,6 +85,7 @@ except Exception:
 
 threshold = 1
 
+thread = None
 switch = None
 logins = 1
 
@@ -100,17 +103,22 @@ except Exception:
 api = growattServer.GrowattApi(False, "MIC55555")
 login_response = api.login(login["usr"], login["pwd"])
 
+if not login_response["success"]:
+    log("login error: " + login_response["error"])
+    shutdown()
+
 while True:
     try:
         plants = api.plant_list(login_response['user']['id'])
-    except Exception:
+    except Exception as e:
         logins += 1
-        log("login again: " + json.dumps(login_response))
+        log("login again: " + str(e))
+
         login_response = api.login(login["usr"], login["pwd"])
         if not login_response["success"]:
-            log("login error: " + json.dumps(login_response))
-            print(login_response["error"])
+            log("login error: " + login_response["error"])
             shutdown()
+
         plants = api.plant_list(login_response['user']['id'])
 
     plant_id = plants['data'][0]["plantId"]
