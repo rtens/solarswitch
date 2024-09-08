@@ -9,14 +9,32 @@ import signal
 try:
     import RPi.GPIO as gpio
 
+    switch_on = 8
+    switch_off = 10
+    led = 13
+
     gpio.setmode(gpio.BOARD)
-    gpio.setup(13, gpio.OUT)
+    gpio.setup(led, gpio.OUT)
+    gpio.setup(switch_on, gpio.OUT)
+    gpio.setup(switch_off, gpio.OUT)
+
+    gpio.output(switch_on, True)
+    gpio.output(switch_off, True)
 
     def led_set(to=True):
-        gpio.output(13, to)
+        gpio.output(led, to)
 
     def led_cleanup():
         gpio.cleanup()
+
+    def set_switch(on=True):
+        pin = switch_on if on else switch_off
+
+        for _ in range(3):
+            gpio.output(pin, False)
+            time.sleep(.5)
+            gpio.output(pin, True)
+            time.sleep(1)
 
 except Exception:
 
@@ -28,6 +46,9 @@ except Exception:
     def led_cleanup():
         pass
 
+    def set_switch(on=True):
+        print("Switch " + ("ON" if on else "OFF"))
+    
 running = False
 
 def led_flash(on, off):
@@ -134,6 +155,7 @@ while True:
 
             if switch == False or switch == None:
                 switch = True
+                set_switch(True)
                 log("switched on")
 
             if soc >= 95:
@@ -143,6 +165,7 @@ while True:
         else:
             if switch == True or switch == None:
                 switch = False
+                set_switch(False)
                 log("switched off")
 
             if average_net >= 0:
