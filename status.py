@@ -137,89 +137,91 @@ while True:
         plant_id = plants['data'][0]["plantId"]
         plant_info = api.plant_info(plant_id)
         device_sn = plant_info["deviceList"][0]["deviceSn"]
-        mix_status = api.mix_system_status(device_sn, plant_id)
 
-        history.append(round(float(mix_status["ppv"]) - float(mix_status["pLocalLoad"]), 2))
-        if len(history) > 7: history.pop(0)
+        while True:
+            mix_status = api.mix_system_status(device_sn, plant_id)
 
-        with open("history.json", "w") as f:
-            json.dump(history, f)
+            history.append(round(float(mix_status["ppv"]) - float(mix_status["pLocalLoad"]), 2))
+            if len(history) > 7: history.pop(0)
 
-        average_net = round(sum(history) / len(history), 2)
+            with open("history.json", "w") as f:
+                json.dump(history, f)
 
-        soc = float(mix_status["SOC"])
+            average_net = round(sum(history) / len(history), 2)
 
-        if average_net >= threshold:
-            threshold = 0
-            status = bcolors.green
+            soc = float(mix_status["SOC"])
 
-            if switch == False or switch == None:
-                switch = True
-                set_switch(True)
-                log("switched on")
+            if average_net >= threshold:
+                threshold = 0
+                status = bcolors.green
 
-            if soc >= 95:
-                thread = threading.Thread(target=led_set, args=(True,))
+                if switch == False or switch == None:
+                    switch = True
+                    set_switch(True)
+                    log("switched on")
+
+                if soc >= 95:
+                    thread = threading.Thread(target=led_set, args=(True,))
+                else:
+                    thread = threading.Thread(target=led_flash, args=(2, .1))
             else:
-                thread = threading.Thread(target=led_flash, args=(2, .1))
-        else:
-            if switch == True or switch == None:
-                switch = False
-                set_switch(False)
-                log("switched off")
+                if switch == True or switch == None:
+                    switch = False
+                    set_switch(False)
+                    log("switched off")
 
-            if average_net >= 0:
-                status = bcolors.blue
-                thread = threading.Thread(target=led_flash, args=(1, .5))
-            elif soc >= 15:
-                threshold = .5
-                status = bcolors.yellow
-                thread = threading.Thread(target=led_flash, args=(1, 2))
-            else:
-                threshold = 1
-                status = bcolors.red
-                thread = threading.Thread(target=led_flash, args=(.1, 5))
+                if average_net >= 0:
+                    status = bcolors.blue
+                    thread = threading.Thread(target=led_flash, args=(1, .5))
+                elif soc >= 15:
+                    threshold = .5
+                    status = bcolors.yellow
+                    thread = threading.Thread(target=led_flash, args=(1, 2))
+                else:
+                    threshold = 1
+                    status = bcolors.red
+                    thread = threading.Thread(target=led_flash, args=(.1, 5))
 
-        print(bcolors.hide, end="")
-        print(status, end="")
-        print("Updated:    ", datetime.datetime.now().strftime("%H:%M:%S"))
-        print("Logins:     ", logins)
-        print("Using:      ", mix_status["pLocalLoad"], "kW")
-        print("Generating: ", mix_status["ppv"], "kW")
-        print("Battery:    ", mix_status["SOC"], "%")
-        print("Charging:   ", mix_status["chargePower"], "kW")
-        print("Discharging:", mix_status["pdisCharge1"], "kW")
-        print("Importing:  ", mix_status["pactouser"], "kW")
-        print("Exporting:  ", mix_status["pactogrid"], "kW")
-        print("History:    ", average_net, history)
-        print("Threshold:  ", threshold)
-        print("Switch:     ", switch)
+            print(bcolors.hide, end="")
+            print(status, end="")
+            print("Updated:    ", datetime.datetime.now().strftime("%H:%M:%S"))
+            print("Logins:     ", logins)
+            print("Using:      ", mix_status["pLocalLoad"], "kW")
+            print("Generating: ", mix_status["ppv"], "kW")
+            print("Battery:    ", mix_status["SOC"], "%")
+            print("Charging:   ", mix_status["chargePower"], "kW")
+            print("Discharging:", mix_status["pdisCharge1"], "kW")
+            print("Importing:  ", mix_status["pactouser"], "kW")
+            print("Exporting:  ", mix_status["pactogrid"], "kW")
+            print("History:    ", average_net, history)
+            print("Threshold:  ", threshold)
+            print("Switch:     ", switch)
 
-        print()
-        print(multibar((("=", soc-10),), 90))
-        print(multibar((
-            ("#", mix_status["pLocalLoad"]),
-            ("+", mix_status["chargePower"]),
-            (">", mix_status["pactogrid"]),
-        )))
-        print(multibar((
-            ("*", mix_status["ppv"]),
-            ("-", mix_status["pdisCharge1"]),
-            ("<", mix_status["pactouser"]),
-        )))
-        print()
+            print()
+            print(multibar((("=", soc-10),), 90))
+            print(multibar((
+                ("#", mix_status["pLocalLoad"]),
+                ("+", mix_status["chargePower"]),
+                (">", mix_status["pactogrid"]),
+            )))
+            print(multibar((
+                ("*", mix_status["ppv"]),
+                ("-", mix_status["pdisCharge1"]),
+                ("<", mix_status["pactouser"]),
+            )))
+            print()
 
-        print(bcolors.end, flush=True)
+            print(bcolors.end, flush=True)
 
-        running = True
-        thread.start()
+            running = True
+            thread.start()
 
-        time.sleep(3*60)
+            time.sleep(3*60)
 
-        running = False
-        thread.join()
-        led_set(False)
-        os.system("clear")
+            running = False
+            thread.join()
+            led_set(False)
+            os.system("clear")
 
     except KeyboardInterrupt:
         shutdown()
